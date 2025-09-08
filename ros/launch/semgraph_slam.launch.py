@@ -31,8 +31,8 @@ class Basic_config():
         self.graph_edge_path: str = os.path.join(self.current_pkg_path, "data/graph_edge_00.txt")
 
 
-        self.lidar_path: str = "/home/wangneng/DataFast/kitti/sequences/00/velodyne/"
-        self.label_path: str = "/home/wangneng/DataFast/kitti/sequences/00/labels/"
+        self.lidar_path: str = "/ros_ws/data_odometry_velodyne/dataset/sequences/00/velodyne/"
+        self.label_path: str = "/ros_ws/data_odometry_labels/dataset/sequences/00/labels/"
 
         # KISS-ICP params 
         self.deskew : bool = False
