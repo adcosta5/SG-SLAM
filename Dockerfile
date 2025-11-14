@@ -28,20 +28,33 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy data folders into the image
-COPY data_odometry_labels /ros_ws/data_odometry_labels
-COPY data_odometry_velodyne /ros_ws/data_odometry_velodyne
+# COPY data_odometry_labels /ros_ws/data_odometry_labels
+# COPY data_odometry_velodyne /ros_ws/data_odometry_velodyne
 
 
 # Create a workspace directory
 WORKDIR /ros_ws/src
 
 # Clone and build GTSAM (first, since it's a dependency)
+# RUN git clone https://github.com/borglab/gtsam.git && \
+#     cd gtsam && \
+#     mkdir build && \
+#     cd build && \
+#     cmake .. -DGTSAM_USE_SYSTEM_EIGEN=ON && \
+#     make -j4 && \
+#     make install
+
 RUN git clone https://github.com/borglab/gtsam.git && \
     cd gtsam && \
     mkdir build && \
     cd build && \
-    cmake .. -DGTSAM_USE_SYSTEM_EIGEN=ON && \
-    make -j8 && \
+    cmake .. \
+        -DGTSAM_USE_SYSTEM_EIGEN=ON \
+        -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+        -DGTSAM_BUILD_TESTS=OFF \
+        -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && \
     make install
 
 # Clone SG-SLAM into the ROS workspace
@@ -56,4 +69,7 @@ RUN . /opt/ros/foxy/setup.sh && \
 CMD ["bash", "-c", ". /opt/ros/foxy/setup.sh && . /ros_ws/install/setup.sh && /bin/bash"]
 
 # xhost +local:docker
-# docker run -it   --env="DISPLAY"   --env="QT_X11_NO_MITSHM=1"   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"   -v /home/acosta/SG-SLAM/SG-SLAM:/ros_ws/src/SG-SLAM   sg-slam-foxy-conda
+# docker run -it   --env="DISPLAY"   --env="QT_X11_NO_MITSHM=1"   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"  -v /home/acosta/SG-SLAM/data_odometry_labels:/ros_ws/data_odometry_labels -v /home/acosta/SG-SLAM/data_odometry_velodyne:/ros_ws/data_odometry_velodyne  sg-slam
+
+
+# -v /home/acosta/SG-SLAM:/ros_ws/src/SG-SLAM

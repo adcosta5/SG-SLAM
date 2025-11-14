@@ -32,7 +32,7 @@ class Basic_config():
 
 
         self.lidar_path: str = "/ros_ws/data_odometry_velodyne/dataset/sequences/00/velodyne/"
-        self.label_path: str = "/ros_ws/data_odometry_labels/dataset/sequences/00/labels/"
+        self.label_path: str = "/ros_ws/data_odometry_labels/submit_2025_10_29/sequences/00/predictions/"
 
         # KISS-ICP params 
         self.deskew : bool = False
