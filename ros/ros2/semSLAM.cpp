@@ -280,8 +280,17 @@ void Odometry::RegisterFrame() {
         local_map_header.frame_id = odom_frame_;
         local_map_publisher_->publish(convertPointCloudSemanticRGBMSG(semGraphSlamer.LocalMap(), local_map_header));
 
-        // Publish local graph map
-        auto graph_map_msg = converGrapp2MSG(semGraphSlamer.LocalGraphMap().node_centers,semGraphSlamer.LocalGraphMap().node_labels,semGraphSlamer.LocalGraphMap().edges,local_map_header);
+        // Publish local graph map with unique colors per instance ID
+        auto instances = semGraphSlamer.GetInstancesInLocalMap();
+        std::vector<Eigen::Vector3d> instance_centers;
+        std::vector<int> instance_labels;
+        std::vector<int> instance_ids;
+        for(const auto& ins : instances){
+            instance_centers.push_back(ins.pose);
+            instance_labels.push_back(ins.label);
+            instance_ids.push_back(ins.id);
+        }
+        auto graph_map_msg = converGrapp2MSGWithInstanceID(instance_centers, instance_labels, instance_ids, semGraphSlamer.LocalGraphMap().edges, local_map_header);
         local_graph_map_publisher_->publish(graph_map_msg.first);
         local_graph_edge_publisher_->publish(graph_map_msg.second);
 

@@ -306,6 +306,86 @@ PointCloud2 EigenToPointCloud2(const std::vector<Eigen::Vector3d> &points, const
     return msg;
 }
 
+std::pair<PointCloud2,visualization_msgs::msg::Marker> converGrapp2MSGWithInstanceID(const std::vector<Eigen::Vector3d> &nodes, 
+                                                                  const std::vector<int> &labels,
+                                                                  const std::vector<int> &instance_ids, 
+                                                                  const std::vector<std::pair<int,int>> &edges, 
+                                                                  const Header &header){
+    // nodes with unique color per instance ID
+    pcl::PointCloud<pcl::PointXYZRGBL>::Ptr pc_in(new pcl::PointCloud<pcl::PointXYZRGBL>());
+    
+    // Predefined distinct colors for instances
+    std::vector<Eigen::Vector3i> distinct_colors = {
+        {255, 0, 0},     // Red
+        {0, 255, 0},     // Green
+        {0, 0, 255},     // Blue
+        {255, 255, 0},   // Yellow
+        {255, 0, 255},   // Magenta
+        {0, 255, 255},   // Cyan
+        {255, 128, 0},   // Orange
+        {128, 0, 255},   // Purple
+        {0, 255, 128},   // Spring green
+        {255, 0, 128},   // Rose
+        {128, 255, 0},   // Chartreuse
+        {0, 128, 255},   // Sky blue
+        {255, 128, 128}, // Light red
+        {128, 255, 128}, // Light green
+        {128, 128, 255}, // Light blue
+        {255, 200, 100}, // Peach
+        {100, 255, 200}, // Mint
+        {200, 100, 255}, // Lavender
+        {255, 100, 100}, // Salmon
+        {100, 255, 100}  // Pale green
+    };
+    
+    for(size_t i=0;i<nodes.size();i++){
+        int label = labels[i];
+        int instance_id = instance_ids[i];
+        
+        // Assign color based on instance ID
+        Eigen::Vector3i color = distinct_colors[instance_id % distinct_colors.size()];
+        
+        pcl::PointXYZRGBL pointLabel(color[0], color[1], color[2], label);
+        pointLabel.x = nodes[i].x();
+        pointLabel.y = nodes[i].y();
+        pointLabel.z = nodes[i].z();
+        pc_in->push_back(pointLabel);
+    }
+    PointCloud2 PointsMsg;
+    pcl::toROSMsg(*pc_in, PointsMsg);
+    PointsMsg.header = header;
+    PointsMsg.header.frame_id = FixFrameId(PointsMsg.header.frame_id);
+
+    //edges
+    visualization_msgs::msg::Marker marker;
+    std::vector<geometry_msgs::msg::Point> points;
+    marker.ns = "lines";
+    marker.id = 0;
+    marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.scale.x = 0.2; 
+    marker.color.r = 0.6;
+    marker.color.g = 0.6;
+    marker.color.b = 0.6;
+    marker.color.a = 0.6;
+    for(size_t i=0;i<edges.size();i++){
+        geometry_msgs::msg::Point p1, p2;
+        p1.x = nodes[edges[i].first][0];
+        p1.y = nodes[edges[i].first][1];
+        p1.z = nodes[edges[i].first][2];
+        p2.x = nodes[edges[i].second][0];
+        p2.y = nodes[edges[i].second][1];
+        p2.z = nodes[edges[i].second][2];
+        points.push_back(p1);
+        points.push_back(p2);
+    }
+
+    marker.points = points;
+    marker.header = header;
+    marker.header.frame_id = FixFrameId(marker.header.frame_id);
+    return std::make_pair(PointsMsg,marker);
+}
+
 std::pair<PointCloud2,visualization_msgs::msg::Marker> converGrapp2MSG(const std::vector<Eigen::Vector3d> &nodes, 
                                                                   const std::vector<int> &labels, 
                                                                   const std::vector<std::pair<int,int>> &edges, 
@@ -415,13 +495,67 @@ PointCloud2 convertPointCloudSemanticMSG(const std::vector<Eigen::Vector3d> &poi
 
 PointCloud2 convertPointCloudSemanticRGBMSG(const std::vector<Eigen::Vector4d> &points, const Header &header){
     pcl::PointCloud<pcl::PointXYZRGBL>::Ptr pc_in(new pcl::PointCloud<pcl::PointXYZRGBL>());
+    
+    // First pass: identify unique landmark instances (based on spatial proximity and label)
+    // We'll assign a unique color index to each distinct landmark
+    std::unordered_map<int, int> point_to_color_index;
+    int color_index = 0;
+    
+    // Predefined distinct colors for landmarks (HSV-based for good separation)
+    std::vector<Eigen::Vector3i> distinct_colors = {
+        {255, 0, 0},     // Red
+        {0, 255, 0},     // Green
+        {0, 0, 255},     // Blue
+        {255, 255, 0},   // Yellow
+        {255, 0, 255},   // Magenta
+        {0, 255, 255},   // Cyan
+        {255, 128, 0},   // Orange
+        {128, 0, 255},   // Purple
+        {0, 255, 128},   // Spring green
+        {255, 0, 128},   // Rose
+        {128, 255, 0},   // Chartreuse
+        {0, 128, 255},   // Sky blue
+        {255, 128, 128}, // Light red
+        {128, 255, 128}, // Light green
+        {128, 128, 255}, // Light blue
+        {255, 200, 100}, // Peach
+        {100, 255, 200}, // Mint
+        {200, 100, 255}, // Lavender
+        {255, 100, 100}, // Salmon
+        {100, 255, 100}  // Pale green
+    };
+    
+    // Track the current landmark being processed
+    int current_landmark_label = -1;
+    int current_color = 0;
+    
     for(size_t i=0;i<points.size();i++){
-        int label   = points[i][3];
-        if(label==1) label = 1;   // vehicle
-        else if(label==2) label = 16; // trunk
-        else if(label==3) label = 18; // pole
-        if(label==0) continue;
-        pcl::PointXYZRGBL pointLabel(color_map[label][0],color_map[label][1],color_map[label][2],label);;
+        int label = points[i][3];
+        
+        // Check if this is a landmark type (vehicle=1, trunk=2, or pole=3)
+        if(label != 1 && label != 2 && label != 3) continue;
+        
+        // If we encounter a new landmark instance (label changed or first time)
+        if(label != current_landmark_label) {
+            current_landmark_label = label;
+            current_color = color_index;
+            color_index++;
+        }
+        
+        point_to_color_index[i] = current_color;
+    }
+    
+    // Second pass: create the point cloud with assigned colors
+    for(size_t i=0;i<points.size();i++){
+        int label = points[i][3];
+        
+        // Skip non-landmark points
+        if(label != 1 && label != 2 && label != 3) continue;
+        
+        int assigned_color_index = point_to_color_index[i];
+        Eigen::Vector3i color = distinct_colors[assigned_color_index % distinct_colors.size()];
+        
+        pcl::PointXYZRGBL pointLabel(color[0], color[1], color[2], label);
         pointLabel.x = points[i].x();
         pointLabel.y = points[i].y();
         pointLabel.z = points[i].z();

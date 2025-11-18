@@ -51,6 +51,7 @@ struct GraphMap {
     std::vector<InsNode> instance_in_localmap;
     VTbii FindInsMatch(const Graph &graph);
     std::tuple< Sophus::SE3d, bool> Relocalization(const Graph &graph,const VTbii &frame2map_match,double inlier_rate_th);
+    std::vector<InsNode> GetInstancesInLocalMap() const { return instance_in_localmap; }
     explicit GraphMap(double edge_dis_th, double subgraph_edge_th,int subinterval, int graph_node_dimension, double neb_vehicle_disth, double neb_pole_disth,double max_distance)
             :  edge_dis_th_(edge_dis_th),
                subgraph_edge_th_(subgraph_edge_th),

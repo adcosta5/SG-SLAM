@@ -99,6 +99,7 @@ public:
 public:
     V4d LocalMap() const { return local_map_.Pointcloud(); };
     Graph LocalGraphMap() const { return local_graph_map_.InsGraphMap; };
+    std::vector<InsNode> GetInstancesInLocalMap() const { return local_graph_map_.GetInstancesInLocalMap(); };
     std::vector<Sophus::SE3d> poses() const { return poses_; };
 
 private:

@@ -71,5 +71,6 @@
         "bit": "cpp",
         "*.ipp": "cpp",
         "core": "cpp"
-    }
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }
