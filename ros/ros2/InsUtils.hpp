@@ -656,12 +656,15 @@ std::pair<std::vector<Eigen::Vector3d>,std::vector<int>> loadCloud(std::string f
 
         for (uint32_t i = 0; i < num_points; ++i) {
             uint32_t sem_label;
-            if (true) {
-                sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
-            } 
-            else {
-                sem_label = values_label[i];
-            }
+
+            sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
+            // KITTI uses lower 16 bits for semantic and upper 16 for instance ids.
+            // if (true) {
+            //     sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
+            // } 
+            // else {
+            //     sem_label = values_label[i];
+            // }
             pc_out[i] = Eigen::Vector3d(values_cloud[4 * i],values_cloud[4 * i + 1],values_cloud[4 * i + 2]);
             label_out[i] = (int) sem_label;
         }

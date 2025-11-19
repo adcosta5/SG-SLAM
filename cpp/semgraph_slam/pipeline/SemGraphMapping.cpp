@@ -43,13 +43,32 @@ void SemGraphMapping::mainProcess(int cloud_id, const Graph &frame_graph){
         time_search = std::chrono::duration<double, std::milli>(end_time_search - start_time_search).count();
     }
 
+    // DEBUG: Print loop closure info
+    // std::cout << "====== FRAME " << cloud_id << " DEBUG ======" << std::endl;
+    // std::cout << "Frame graph instances: " << frame_graph.new_instance.size() << std::endl;
+    // std::cout << "Loop detected: " << (loop_flag ? "YES" : "NO") << std::endl;
+
     // Determine whether the instance node has been matched in the closed loop to prevent duplicate representation of the instance
     std::vector<bool> match_instance(frame_graph.node_labels.size(),false);  
+
+    if(loop_flag){
+        std::cout << "===== LOOP CLOSURE DEBUG =====" << std::endl;
+        std::cout << "match_instance_idx size: " << match_instance_idx.size() << std::endl;
+        std::cout << "match_instance_idx values: ";
+        for(auto idx : match_instance_idx) std::cout << idx << " ";
+        std::cout << "\nframe_graph.new_instance size: " << frame_graph.new_instance.size() << std::endl;
+        std::cout << "frame_graph.new_instance values: ";
+        for(auto idx : frame_graph.new_instance) std::cout << idx << " ";
+        std::cout << "\nframe_graph.node_labels size: " << frame_graph.node_labels.size() << std::endl;
+        std::cout << "===============================" << std::endl;
+    }
+
     if(loop_flag){
         for(size_t i=0; i<match_instance_idx.size(); i++){
-            match_instance[i] = true;
+            match_instance[i] = true;       // match_instance[match_instance_idx[i]] didn't make that the nodes stop stacking.
         }
     }
+    
     std::vector<Eigen::Vector4d> new_instance_frame; 
     for(size_t i=0;i<frame_graph.new_instance.size();i++){
         int idx = frame_graph.new_instance[i];
@@ -57,6 +76,13 @@ void SemGraphMapping::mainProcess(int cloud_id, const Graph &frame_graph){
             new_instance_frame.emplace_back(Eigen::Vector4d(frame_graph.node_centers[idx][0],frame_graph.node_centers[idx][1],frame_graph.node_centers[idx][2],frame_graph.node_labels[idx]));
         }
     }
+
+    // DEBUG: Print filtering results
+    // std::cout << "Instances before filtering: " << frame_graph.new_instance.size() << std::endl;
+    // std::cout << "Instances after filtering: " << new_instance_frame.size() << std::endl;
+    // std::cout << "Total accumulated nodes: " << (node_num_acc.empty() ? 0 : node_num_acc.back()) + new_instance_frame.size() << std::endl;
+    // std::cout << "==============================" << std::endl;
+
 
     // Record the number of instance nodes in the graph map 
     if(new_instance_frame_vec.size()==0) node_num_acc.emplace_back(0);

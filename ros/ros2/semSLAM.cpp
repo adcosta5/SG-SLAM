@@ -170,6 +170,7 @@ void Odometry::RegisterFrame() {
                     << cloudInd << ".bin";
         lidar_label_path << label_path_ << std::setfill('0') << std::setw(6)
                     << cloudInd << ".label";
+           
 
         auto frame_raw= loadCloud(lidar_data_path.str(), lidar_label_path.str());
         if (frame_raw.first.empty()) {
@@ -282,6 +283,13 @@ void Odometry::RegisterFrame() {
 
         // Publish local graph map with unique colors per instance ID
         auto instances = semGraphSlamer.GetInstancesInLocalMap();
+        
+        // RCLCPP_INFO(this->get_logger(), "====== INSTANCE DEBUG ======");
+        // RCLCPP_INFO(this->get_logger(), "Number of instances detected: %zu", instances.size());
+        // RCLCPP_INFO(this->get_logger(), "Local map size: %zu points", semGraphSlamer.LocalMap().size());
+        // RCLCPP_INFO(this->get_logger(), "============================");
+
+
         std::vector<Eigen::Vector3d> instance_centers;
         std::vector<int> instance_labels;
         std::vector<int> instance_ids;
