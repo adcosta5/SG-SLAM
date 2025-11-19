@@ -10,9 +10,11 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /mnt/DATA:/ros_ws/data
       - /home/acosta/2DPASS:/ros_ws/data/2DPASS
-      # - /home/acosta/SG-SLAM:/ros_ws/src/SG-SLAM
+      - /home/acosta/SG-SLAM:/ros_ws/src/SG-SLAM
     tty: true
     stdin_open: true
     restart: unless-stopped
 
+
+    # docker compose up -d --build
     # docker compose exec sg-slam /bin/bash

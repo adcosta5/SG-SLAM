@@ -58,18 +58,13 @@ RUN git clone https://github.com/borglab/gtsam.git && \
     make install
 
 # Clone SG-SLAM into the ROS workspace
-RUN git clone https://github.com/nubot-nudt/SG-SLAM.git
+# RUN git clone https://github.com/adcosta5/SG-SLAM.git
 
-# Build the ROS workspace using colcon
 WORKDIR /ros_ws
-RUN . /opt/ros/foxy/setup.sh && \
-    MAKEFLAGS="-j4" colcon build --symlink-install
 
-# Set up the entry point with ROS 2 environment sourced
-CMD ["bash", "-c", ". /opt/ros/foxy/setup.sh && . /ros_ws/install/setup.sh && /bin/bash"]
+# # Build the ROS workspace using colcon
+# RUN . /opt/ros/foxy/setup.sh && \
+#     MAKEFLAGS="-j4" colcon build --symlink-install
 
-# xhost +local:docker
-# docker run -it   --env="DISPLAY"   --env="QT_X11_NO_MITSHM=1"   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"  -v /home/acosta/SG-SLAM/data_odometry_labels:/ros_ws/data_odometry_labels -v /home/acosta/SG-SLAM/data_odometry_velodyne:/ros_ws/data_odometry_velodyne  sg-slam
-
-
-# -v /home/acosta/SG-SLAM:/ros_ws/src/SG-SLAM
+# # Set up the entry point with ROS 2 environment sourced
+# CMD ["bash", "-c", ". /opt/ros/foxy/setup.sh && . /ros_ws/install/setup.sh && /bin/bash"]
