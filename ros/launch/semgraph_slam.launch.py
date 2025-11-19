@@ -31,8 +31,13 @@ class Basic_config():
         self.graph_edge_path: str = os.path.join(self.current_pkg_path, "data/graph_edge_00.txt")
 
 
-        self.lidar_path: str = "/ros_ws/data_odometry_velodyne/dataset/sequences/00/velodyne/"
-        self.label_path: str = "/ros_ws/data_odometry_labels/submit_2025_10_29/sequences/00/predictions/"
+        # KITTI
+        self.lidar_path: str = "/ros_ws/data/KITTI/LiDAR_KITTI/dataset/sequences/00/velodyne/"
+        self.label_path: str = "/ros_ws/data/2DPASS/2DPASS_4scale_64dim/submit_2025_10_29/sequences/00/predictions/"
+
+        # DigiForests
+        # self.lidar_path: str = "/ros_ws/data/DigiForest/M21/ground_clouds/"
+        # self.label_path: str = "/ros_ws/data/2DPASS/logs/DigiForests/default/version_0/checkpoints/submit_2025_11_13/sequences/M21/predictions"
 
         # KISS-ICP params 
         self.deskew : bool = False
@@ -55,8 +60,8 @@ class Basic_config():
         self.subgraph_edge_th: float = 20.0
         self.subinterval: int = 30
         self.graph_node_dimension: int = 30
-        self.nearest_neighbor_vehicle_disth: float = 2.0
-        self.nearest_neighbor_pole_disth: float = 2.0
+        self.nearest_neighbor_vehicle_disth: float = 5.0
+        self.nearest_neighbor_pole_disth: float = 5.0
         self.max_local_graph_map_range: float = 100.0
 
         # relozalization params
