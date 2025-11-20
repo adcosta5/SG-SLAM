@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <vector>
 #include <fstream>
+#include <filesystem>
 
 // SG-SLAM
 #include "semSLAM.hpp"
@@ -160,19 +161,43 @@ void Odometry::RegisterFrame() {
         times_vec.assign(result.begin(), result.end());
     }
 
+    // Load DigiForest filenames once at startup
+    std::vector<std::string> digiforest_files;
+    if (dataset_ == "digiforests") {
+        namespace fs = std::filesystem;
+        for (const auto& entry : fs::directory_iterator(lidar_path_)) {
+            if (entry.path().extension() == ".pcd") {
+                digiforest_files.push_back(entry.path().stem().string());
+            }
+        }
+        std::sort(digiforest_files.begin(), digiforest_files.end());
+        RCLCPP_INFO(this->get_logger(), "Found %zu DigiForest point cloud files", digiforest_files.size());
+    }
+
     // Main loop
     while(rclcpp::ok()){
 
         // Load data: scan and label
         std::stringstream lidar_data_path;
         std::stringstream lidar_label_path;
-        lidar_data_path << lidar_path_ << std::setfill('0') << std::setw(6)
-                    << cloudInd << ".bin";
-        lidar_label_path << label_path_ << std::setfill('0') << std::setw(6)
-                    << cloudInd << ".label";
-           
+        if (dataset_ == "digiforests") {
+            if (cloudInd >= digiforest_files.size()) {
+                RCLCPP_WARN(this->get_logger(),"No more data, shutting down");
+                seq_finish = true;
+                break;
+            }
+            
+            lidar_data_path << lidar_path_ << digiforest_files[cloudInd] << ".pcd";
+            lidar_label_path << label_path_ << digiforest_files[cloudInd] << ".label";
+        }
+        else {
+            lidar_data_path << lidar_path_ << std::setfill('0') << std::setw(6)
+                        << cloudInd << ".bin";
+            lidar_label_path << label_path_ << std::setfill('0') << std::setw(6)
+                        << cloudInd << ".label";
+        }
 
-        auto frame_raw= loadCloud(lidar_data_path.str(), lidar_label_path.str());
+        auto frame_raw= loadCloud(lidar_data_path.str(), lidar_label_path.str(),dataset_);
         if (frame_raw.first.empty()) {
             RCLCPP_WARN(this->get_logger(),"No more data, shutting down");
             seq_finish = true;  // a flag to indicate end of sequence, for back-end thread

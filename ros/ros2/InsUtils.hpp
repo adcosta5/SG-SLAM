@@ -633,43 +633,152 @@ PointCloud2 EigenToPointCloud2(const std::vector<Eigen::Vector3d> &points,
 }
 
 
-std::pair<std::vector<Eigen::Vector3d>,std::vector<int>> loadCloud(std::string file_cloud, std::string file_label){
+std::pair<std::vector<Eigen::Vector3d>,std::vector<int>> loadCloud(std::string file_cloud, std::string file_label,std::string dataset_){
+        // std::ifstream in_label(file_label, std::ios::binary);
+        // if (!in_label.is_open()) {
+        //     std::cerr << "No file:" << file_label << std::endl;
+        //     // exit(-1);
+        //     std::pair<std::vector<Eigen::Vector3d>,std::vector<int>> empty;
+        //     return empty;
+        // }
+        // in_label.seekg(0, std::ios::end);
+        // uint32_t num_points = in_label.tellg() / sizeof(uint32_t);
+        // in_label.seekg(0, std::ios::beg);
+        // std::vector<uint32_t> values_label(num_points);
+        // in_label.read((char*)&values_label[0], num_points * sizeof(uint32_t));
+        // std::ifstream in_cloud(file_cloud, std::ios::binary);
+        // std::vector<float> values_cloud(4 * num_points);
+        // in_cloud.read((char*)&values_cloud[0], 4 * num_points * sizeof(float));
+  
+
+        // std::vector<Eigen::Vector3d> pc_out(num_points);
+        // std::vector<int> label_out(num_points);
+
+        // for (uint32_t i = 0; i < num_points; ++i) {
+        //     uint32_t sem_label;
+
+        //     sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
+        //     // KITTI uses lower 16 bits for semantic and upper 16 for instance ids.
+        //     // if (true) {
+        //     //     sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
+        //     // } 
+        //     // else {
+        //     //     sem_label = values_label[i];
+        //     // }
+        //     pc_out[i] = Eigen::Vector3d(values_cloud[4 * i],values_cloud[4 * i + 1],values_cloud[4 * i + 2]);
+        //     label_out[i] = (int) sem_label;
+        // }
+        // in_label.close();
+        // in_cloud.close();
+
+        // Load labels (same for both datasets)
         std::ifstream in_label(file_label, std::ios::binary);
         if (!in_label.is_open()) {
             std::cerr << "No file:" << file_label << std::endl;
-            // exit(-1);
             std::pair<std::vector<Eigen::Vector3d>,std::vector<int>> empty;
             return empty;
         }
         in_label.seekg(0, std::ios::end);
-        uint32_t num_points = in_label.tellg() / sizeof(uint32_t);
+        uint32_t num_points_label = in_label.tellg() / sizeof(uint32_t);
         in_label.seekg(0, std::ios::beg);
-        std::vector<uint32_t> values_label(num_points);
-        in_label.read((char*)&values_label[0], num_points * sizeof(uint32_t));
-        std::ifstream in_cloud(file_cloud, std::ios::binary);
-        std::vector<float> values_cloud(4 * num_points);
-        in_cloud.read((char*)&values_cloud[0], 4 * num_points * sizeof(float));
-  
-
-        std::vector<Eigen::Vector3d> pc_out(num_points);
-        std::vector<int> label_out(num_points);
-
-        for (uint32_t i = 0; i < num_points; ++i) {
-            uint32_t sem_label;
-
-            sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
-            // KITTI uses lower 16 bits for semantic and upper 16 for instance ids.
-            // if (true) {
-            //     sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
-            // } 
-            // else {
-            //     sem_label = values_label[i];
-            // }
-            pc_out[i] = Eigen::Vector3d(values_cloud[4 * i],values_cloud[4 * i + 1],values_cloud[4 * i + 2]);
-            label_out[i] = (int) sem_label;
-        }
+        std::vector<uint32_t> values_label(num_points_label);
+        in_label.read((char*)&values_label[0], num_points_label * sizeof(uint32_t));
         in_label.close();
-        in_cloud.close();
+
+        std::vector<Eigen::Vector3d> pc_out;
+        std::vector<int> label_out;
+        uint32_t num_points = 0;
+
+        // Load point cloud based on dataset type
+        if (dataset_ == "digiforests") {
+            // Load PCD file
+            std::ifstream in_cloud(file_cloud, std::ios::binary);
+            if (!in_cloud.is_open()) {
+                std::cerr << "No file:" << file_cloud << std::endl;
+                std::pair<std::vector<Eigen::Vector3d>,std::vector<int>> empty;
+                return empty;
+            }
+
+            // Parse PCD header
+            std::string line;
+            bool data_section = false;
+            while (std::getline(in_cloud, line)) {
+                if (line.find("WIDTH") != std::string::npos) {
+                    num_points = std::stoi(line.substr(line.find(" ") + 1));
+                }
+                if (line.find("DATA binary") != std::string::npos) {
+                    data_section = true;
+                    break;
+                }
+            }
+
+            if (!data_section) {
+                std::cerr << "Invalid PCD file format: " << file_cloud << std::endl;
+                std::pair<std::vector<Eigen::Vector3d>,std::vector<int>> empty;
+                return empty;
+            }
+
+            // Read binary point data (x, y, z, intensity)
+            std::vector<float> values_cloud(4 * num_points);
+            in_cloud.read((char*)&values_cloud[0], 4 * num_points * sizeof(float));
+            in_cloud.close();
+
+            // Verify point count matches label count
+            if (num_points != num_points_label) {
+                std::cerr << "Warning: Point count mismatch - Cloud: " << num_points 
+                        << ", Labels: " << num_points_label << std::endl;
+                num_points = std::min(num_points, num_points_label);
+            }
+
+            pc_out.resize(num_points);
+            label_out.resize(num_points);
+
+            for (uint32_t i = 0; i < num_points; ++i) {
+                uint32_t sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
+                pc_out[i] = Eigen::Vector3d(values_cloud[4 * i], 
+                                            values_cloud[4 * i + 1], 
+                                            values_cloud[4 * i + 2]);
+                label_out[i] = (int) sem_label;
+            }
+
+        } else {
+            // Default: Load KITTI .bin format
+            std::ifstream in_cloud(file_cloud, std::ios::binary);
+            if (!in_cloud.is_open()) {
+                std::cerr << "No file:" << file_cloud << std::endl;
+                std::pair<std::vector<Eigen::Vector3d>,std::vector<int>> empty;
+                return empty;
+            }
+
+            in_cloud.seekg(0, std::ios::end);
+            std::streamsize cloud_size = in_cloud.tellg();
+            in_cloud.seekg(0, std::ios::beg);
+            
+            num_points = cloud_size / (4 * sizeof(float));
+            std::vector<float> values_cloud(4 * num_points);
+            in_cloud.read((char*)&values_cloud[0], 4 * num_points * sizeof(float));
+            in_cloud.close();
+
+            // Verify point count matches label count
+            if (num_points != num_points_label) {
+                std::cerr << "Warning: Point count mismatch - Cloud: " << num_points 
+                        << ", Labels: " << num_points_label << std::endl;
+                num_points = std::min(num_points, num_points_label);
+            }
+
+            pc_out.resize(num_points);
+            label_out.resize(num_points);
+
+            for (uint32_t i = 0; i < num_points; ++i) {
+                uint32_t sem_label = label_map[(int)(values_label[i] & 0x0000ffff)];
+                pc_out[i] = Eigen::Vector3d(values_cloud[4 * i], 
+                                            values_cloud[4 * i + 1], 
+                                            values_cloud[4 * i + 2]);
+                label_out[i] = (int) sem_label;
+            }
+        }
+
+
         return std::make_pair(pc_out,label_out);
 }
 

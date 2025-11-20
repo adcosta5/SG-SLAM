@@ -113,12 +113,14 @@ V3d_i PreprocessSemantic(const std::vector<Eigen::Vector3d> &frame,
     std::vector<int> inliers_label;
     for(int i=0; i<(int)frame.size();i++)
     {
-        const double norm = frame[i].norm();
-        if(norm<max_range && norm>min_range && label[i]<20)  // removing the dymaic objects, label value < 20 from the segnet4d 
-        {
-            inliers.emplace_back(frame[i]);
-            inliers_label.emplace_back(label[i]);
-        }
+        // const double norm = frame[i].norm();
+        // if(norm<max_range && norm>min_range && label[i]<20)  // removing the dymaic objects, label value < 20 from the segnet4d 
+        // {
+        //     inliers.emplace_back(frame[i]);
+        //     inliers_label.emplace_back(label[i]);
+        // }
+        inliers.emplace_back(frame[i]);
+        inliers_label.emplace_back(label[i]);
     }
 
     return std::make_pair(inliers,inliers_label);

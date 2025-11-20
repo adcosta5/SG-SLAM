@@ -223,7 +223,7 @@ std::vector<Bbox> ClusterPoints(const std::vector<Eigen::Vector3d>& frame,
         // object 
            if (frame_label[i] == 1 ||     // car
                frame_label[i] == 4 ||     // truck
-               frame_label[i] == 5 ||     // other_vehicle
+               frame_label[i] == 5 ||     // other_vehicle and trunk on digiforests
                frame_label[i] == 16 ||    // trunk
                frame_label[i] == 18 ) {    //pole
                 pc_semantic[frame_label[i]]->emplace_back(frame[i]);
@@ -308,11 +308,11 @@ std::vector<Bbox> ClusterPoints(const std::vector<Eigen::Vector3d>& frame,
                 if (tr[m].second.num < 10)
                     continue;
                 Bbox bbox_cluster;
-                 if(i==1||i==4||i==5){
+                 if(i==1||i==4){
                     // if(tr[m].second.num < 30) continue;
                     bbox_cluster.label = 1; // vechicle
                 }
-                else if(i==16){
+                else if(i==16||i==5){ // added the label 5 as in digiforests represents trunks
                     // if(tr[m].second.num < 20) continue;
                     bbox_cluster.label = 2; // trunk
                 }
