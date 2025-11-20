@@ -18,7 +18,7 @@ class Basic_config():
         self.odom_frame: str = "odom"
         self.map_frame: str = "map"
         self.child_frame: str = "base_link"
-        self.dataset: str = "kitti"
+        
 
         self.current_pkg_path = get_package_share_directory("semgraph_slam")
 
@@ -32,12 +32,19 @@ class Basic_config():
 
 
         # KITTI
-        self.lidar_path: str = "/ros_ws/data/KITTI/LiDAR_KITTI/dataset/sequences/00/velodyne/"
-        self.label_path: str = "/ros_ws/data/2DPASS/2DPASS_4scale_64dim/submit_2025_10_29/sequences/00/predictions/"
+        # self.dataset: str = "kitti"
+        # self.lidar_path: str = "/ros_ws/data/KITTI/LiDAR_KITTI/dataset/sequences/00/velodyne/"
+        # self.label_path: str = "/ros_ws/data/2DPASS/2DPASS_4scale_64dim/submit_2025_10_29/sequences/00/predictions/"
 
-        # DigiForests
+        # # DigiForests
+        # self.dataset: str = "digiforests"
         # self.lidar_path: str = "/ros_ws/data/DigiForest/M21/ground_clouds/"
-        # self.label_path: str = "/ros_ws/data/2DPASS/logs/DigiForests/default/version_0/checkpoints/submit_2025_11_13/sequences/M21/predictions"
+        # self.label_path: str = "/ros_ws/data/2DPASS/logs/DigiForests/default/version_0/checkpoints/submit_2025_11_13/sequences/M21/predictions/"
+
+        # UWB
+        self.dataset: str = "digiforests"
+        self.lidar_path: str = "/ros_ws/data/UGV_UWB/Pilsen/rosbag2_active_20251021_152944_pcds/"
+        self.label_path: str = "/ros_ws/data/2DPASS/logs/DigiForests/default/version_0/checkpoints/submit_2025_11_20/sequences/U2/predictions/"
 
         # KISS-ICP params 
         self.deskew : bool = False
