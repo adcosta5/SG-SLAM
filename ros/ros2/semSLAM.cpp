@@ -734,3 +734,50 @@ int main(int argc, char **argv) {
     
     return 0;
 }
+
+
+
+
+// // // After optimization, query the pose uncertainty
+// Matrix pose_i_cov = isam->marginalCovariance(pose_i_key);
+// Matrix pose_j_cov = isam->marginalCovariance(pose_j_key);
+
+// // Approximate the measurement noise from pose uncertainties
+// // (simplified - actual uncertainty propagation is more complex)
+// gtsam::Vector Vector6_from_marginals(6);
+// Vector6_from_marginals << 
+//     pose_i_cov.diagonal().head<3>() + pose_j_cov.diagonal().head<3>(),  // translation
+//     pose_i_cov.diagonal().tail<3>() + pose_j_cov.diagonal().tail<3>();  // rotation
+
+// gtsam::noiseModel::Diagonal::shared_ptr adaptiveNoise = 
+//     gtsam::noiseModel::Diagonal::Variances(Vector6_from_marginals);
+
+// // Use this adaptive noise for the factor
+// gtSAMgraph.add(gtsam::BetweenFactor<gtsam::Pose3>(..., adaptiveNoise));
+
+///////////////////////////////////////////////////////////////////////////////////
+
+// // After optimization, query the pose uncertainty
+// // Mathematically: Σᵢ = Cov(xᵢ) ∈ ℝ⁶ˣ⁶, where xᵢ = [tᵢ; θᵢ] ∈ SE(3)
+// // This extracts the marginal covariance from the joint posterior: p(xᵢ | z₁:ₜ)
+// Matrix pose_i_cov = isam->marginalCovariance(pose_i_key);
+// Matrix pose_j_cov = isam->marginalCovariance(pose_j_key);
+
+// // Approximate the measurement noise from pose uncertainties
+// // Simplified uncertainty propagation for relative pose measurement z_ij = xⱼ ⊖ xᵢ
+// // Assumption: Independent poses → Σ_z ≈ Σᵢ + Σⱼ (conservative approximation)
+// // More rigorous: Σ_z = J_i Σᵢ J_i^T + J_j Σⱼ J_j^T, where J = ∂(xⱼ ⊖ xᵢ)/∂x
+// // Here we use diagonal approximation: diag(Σ_z) ≈ diag(Σᵢ) + diag(Σⱼ)
+// gtsam::Vector Vector6_from_marginals(6);
+// Vector6_from_marginals << 
+//     pose_i_cov.diagonal().head<3>() + pose_j_cov.diagonal().head<3>(),  // σ²_trans = σ²_tᵢ + σ²_tⱼ
+//     pose_i_cov.diagonal().tail<3>() + pose_j_cov.diagonal().tail<3>();  // σ²_rot = σ²_θᵢ + σ²_θⱼ
+
+// // Construct diagonal noise model: Λ = diag(σ²)⁻¹ (information matrix)
+// // This represents: p(z_ij | xᵢ, xⱼ) ∝ exp(-½ ||h(xᵢ,xⱼ) - z_ij||²_Λ)
+// gtsam::noiseModel::Diagonal::shared_ptr adaptiveNoise = 
+//     gtsam::noiseModel::Diagonal::Variances(Vector6_from_marginals);
+
+// // Add factor with adaptive information matrix derived from pose uncertainties
+// // Factor: f_ij(xᵢ, xⱼ) = ||h(xᵢ,xⱼ) - z_ij||²_Λ, where Λ = diag(σ²_t, σ²_θ)⁻¹
+// gtSAMgraph.add(gtsam::BetweenFactor<gtsam::Pose3>(..., adaptiveNoise));
